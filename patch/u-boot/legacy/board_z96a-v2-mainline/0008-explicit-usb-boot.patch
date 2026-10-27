@@ -1,12 +1,13 @@
 --- a/include/configs/z96a_rk3568.h
 +++ b/include/configs/z96a_rk3568.h
-@@ -18,4 +18,19 @@
+@@ -18,4 +18,20 @@
  
  #include <configs/rk3568_common.h>
  
-+/* One-shot USB boot: the marker is removed before attempting the USB kernel. */
++/* One-shot USB boot: power VBUS, then remove the marker before booting USB. */
 +#undef CONFIG_BOOTCOMMAND
 +#define CONFIG_BOOTCOMMAND \
++	"gpio set A6; gpio set E11; gpio set E9; gpio set C31; " \
 +	"usb start; " \
 +	"if fatload usb 0:1 ${loadaddr} /z96a-usb-once; then " \
 +		"if fatrm usb 0:1 /z96a-usb-once; then " \
