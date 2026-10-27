@@ -39,6 +39,30 @@ function apt_find_upstream_package_version_and_download_url() {
 		mirror_with_slash="${mirror_with_slash}/"
 	fi
 
+	# Debian's packages.debian.org is often unreachable from China. Resolve
+	# the filename directly from the configured Debian mirror's Packages.xz.
+	if [[ "${DISTRIBUTION}" == "Debian" ]]; then
+		local mirror_index_url="http://${DEBIAN_MIRROR}/dists/${RELEASE}/main/binary-${ARCH}/Packages.xz"
+		local package_index_entry package_version package_path
+		package_index_entry="$(
+			curl -fsSL --max-time 60 "${mirror_index_url}" | xz -dc | awk -v pkg="${sought_package_name}" '
+				/^Package: / { current=$2 }
+				current==pkg && /^Version: / { version=$2 }
+				current==pkg && /^Filename: / { filename=$2 }
+				END { print version; print filename }
+			'
+		)" || true
+		package_version="$(printf '%s\n' "${package_index_entry}" | sed -n '1p')"
+		package_path="$(printf '%s\n' "${package_index_entry}" | sed -n '2p')"
+		if [[ -n "${package_version}" && -n "${package_path}" ]]; then
+			found_package_version="${package_version}"
+			found_package_filename="$(basename "${package_path}")"
+			found_package_down_url="http://${DEBIAN_MIRROR}/${package_path}"
+			display_alert "Found package via mirror index" "${found_package_filename} from ${mirror_index_url}" "info"
+			return 0
+		fi
+	fi
+
 	declare base_down_url="http://${mirror_with_slash}pool/main/${first_letter_of_sought_package_name}/${sought_package_name}"
 
 	declare index package_info_download_url
