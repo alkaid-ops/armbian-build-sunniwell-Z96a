@@ -118,6 +118,8 @@ function prepare_python_and_pip() {
 		"PYTHONUSERBASE=${PYTHON3_INFO[USERBASE]}"
 		"PYTHONUNBUFFERED=yes"
 		"PYTHONPYCACHEPREFIX=${PYTHON3_INFO[PYCACHEPREFIX]}"
+		"PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple"
+		"PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn"
 	)
 
 	# If the hash file exists, we're done.
