@@ -1,0 +1,34 @@
+diff --git a/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts b/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts
+index be2a1087d8b5..a55af4fed3af 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts
+@@ -660,6 +660,8 @@ regulator-state-mem {
+ 
+ 			vcc3v3_sd: SWITCH_REG2 {
+ 				regulator-name = "vcc3v3_sd";
++				regulator-always-on;
++				regulator-boot-on;
+ 
+ 				regulator-state-mem {
+ 					regulator-off-in-suspend;
+@@ -887,15 +889,19 @@ &sdmmc1 {
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 	bus-width = <4>;
++	supports-sdio;
+ 	cap-sd-highspeed;
++	cap-mmc-highspeed;
+ 	cap-sdio-irq;
+ 	disable-wp;
+ 	keep-power-in-suspend;
++	max-frequency = <50000000>;
+ 	mmc-pwrseq = <&sdio_pwrseq>;
+ 	non-removable;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_clk &sdmmc1_cmd>;
+-	sd-uhs-sdr104;
++	vmmc-supply = <&vcc3v3_sd>;
++	vqmmc-supply = <&vccio_sd>;
+ 
+ 	status = "okay";
+ 
