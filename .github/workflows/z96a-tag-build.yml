@@ -1,0 +1,101 @@
+name: Build Z96A Armbian Minimal
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: z96a-minimal-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build tagged Z96A image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h
+
+      - name: Build Z96A Minimal image
+        env:
+          TERM: dumb
+        run: |
+          ./compile.sh build \
+            BOARD=z96a-v2-mainline \
+            BRANCH=mainline \
+            RELEASE=bookworm \
+            BUILD_MINIMAL=yes \
+            BUILD_DESKTOP=no \
+            CLEAN_LEVEL=images \
+            COMPRESS_OUTPUTIMAGE=sha,xz \
+            EXPERT=yes \
+            KERNEL_CONFIGURE=no \
+            PREFER_DOCKER=yes
+
+      - name: Write build provenance and verify artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          image_xz=$(find output/images -maxdepth 1 -type f -name '*.img.xz' -print -quit)
+          test -n "$image_xz"
+          test -s "$image_xz"
+          test -s "${image_xz}.sha"
+          expected=$(awk '{print $1}' "${image_xz}.sha")
+          actual=$(sha256sum "$image_xz" | awk '{print $1}')
+          test "$actual" = "$expected"
+          cat > output/images/SOURCE-AND-BUILD.txt <<EOF
+          Armbian Z96A mainline image
+          Git tag: ${GITHUB_REF_NAME}
+          Git commit: ${GITHUB_SHA}
+          Board: z96a-v2-mainline
+          Branch: mainline
+          Release: bookworm
+          Build type: minimal
+          Linux source: https://github.com/yjun123/linux.git
+          Linux commit: b2513489889ed574e1c3dc0da36f27b02ea8af46
+          U-Boot source: https://github.com/kemp233/u-boot-1.git
+          U-Boot commit: 8e474aa605a86de64316ba6da8dc089402976380
+          Kernel patches: eDP pclk, Wi-Fi vcc_wifi GPIO0_A0, pwrseq reset-gpio fix, BOE eDP panel, RK3568 VDPU346
+          EOF
+          cat output/images/SOURCE-AND-BUILD.txt
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: z96a-armbian-${{ github.ref_name }}
+          path: |
+            output/images/*.img.xz
+            output/images/*.img.xz.sha
+            output/images/*.img.txt
+            output/images/SOURCE-AND-BUILD.txt
+            output/debs/*.deb
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish tagged release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            output/images/*.img.xz
+            output/images/*.img.xz.sha
+            output/images/*.img.txt
+            output/images/SOURCE-AND-BUILD.txt
+            output/debs/*.deb
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          overwrite_files: true
