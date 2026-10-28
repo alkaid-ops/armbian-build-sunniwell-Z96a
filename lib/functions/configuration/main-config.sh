@@ -225,6 +225,9 @@ function do_main_configuration() {
 	esac
 
 	case $GHCR_MIRROR in
+		nju)
+			declare -g -r GHCR_SOURCE='ghcr.nju.edu.cn'
+			;;
 		dockerproxy)
 			declare -g -r GHCR_SOURCE='ghcr.dockerproxy.com'
 			;;
