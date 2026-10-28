@@ -1,58 +1,58 @@
-<p align="center">
-  <a href="#build-framework">
-  <img src=".github/armbian-logo.png" alt="Armbian logo" width="144">
-  </a><br>
-  <strong>Armbian Linux Build Framework (Z96A RK3568 定制版)</strong><br>
-<br>
-<a href=https://github.com/armbian/build/graphs/contributors><img alt="GitHub contributors" src="https://img.shields.io/github/contributors-anon/armbian/build?logo=stackexchange&label=Contributors&style=for-the-badge&branch=main&logoColor=white"></a>
-<a href=https://github.com/armbian/os><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=dependabot&label=CI%20Build&style=for-the-badge&branch=main&logoColor=white"></a>
-<a href=https://github.com/armbian/build/commits/main><img alt="GitHub last commit (branch)" src="https://img.shields.io/github/last-commit/armbian/build/main?logo=github&label=Last%20commit&style=for-the-badge&branch=main&logoColor=white"></a>
-</p>
+# 朝歌 Z96A Armbian 主线构建项目
 
-> **📢 项目说明：朝歌 Z96A 云电脑专用定制版**
->
-> 本项目 Fork 自 **[momokind/armbian-build](https://github.com/momokind/armbian-build)**（上游为 Armbian 官方构建框架），专为特定的硬件平台进行了源码级的重构与编译修复。
-> 
-> 💻 **适用设备型号:** 朝歌 Z96A 移动云电脑终端笔记本 (搭载 Rockchip RK3568 芯片)
-> 
-> 🚀 **本分支相比原版的核心新增与修复特性:**
-> * **编译防坑修复:** 彻底解决了 Ubuntu Jammy 基础文件系统构建阶段的 `base-files` 包降级致命报错；强行绕过了已 404 失效的 `150balbes/wifi` (RTL8822BS) 第三方源码拉取环节，确保自动化编译一路绿灯。
-> * **多媒体 Zero-Copy 硬件加速:** 内置自动化定制脚本 (`customize-image.sh`)，自动部署 Amazingfate 维护的 Rockchip 多媒体 PPA 源、MPP 视频转译层与底层 `udev` 提权规则。打通了 Chromium 浏览器的 V4L2 与 Rkvdec2 VPU，完美实现流媒体视频的高效低功耗零拷贝硬解。
-> * **高阶内核驱动补全 (Kconfig):** 补全了官方镜像中阉割的底层关键模块。原生唤醒 **KVM 硬件虚拟化** (释放 ARMv8 EL2 层性能)、**TUN/TAP** (打通 Wireguard/Tailscale 隧道连接)、**exFAT/NTFS** 外置存储内核级全速读写，以及 **MACVLAN/Bridge/eBPF** (无缝支撑高级 Docker 容器网络拓扑与旁路路由探测)。
-> * **系统引导级防砖保护:** 在系统镜像打包末期自动触发 `apt-mark hold` 状态锁死机制，冻结内核 (`linux-image`) 与引导装载器 (`u-boot`) 版本。彻底消除用户日常执行 `apt upgrade` 时，由于拉取到不兼容主线内核导致设备重启变砖的风险。
+本项目基于 Armbian 构建框架，为搭载瑞芯微 RK3568 的朝歌 Z96A 云电脑终端提供可复现的主线 Linux 镜像构建配置。
 
-## What does this project do?
+当前主要版本为：
 
-- Builds custom **kernel**, **image** or a **distribution** optimized for low-resource hardware,
-- Include filesystem generation, low-level control software, kernel image and **bootloader** compilation,
-- Provides a **consistent user experience** by keeping system standards across different platforms.
+- 发行版：Debian Bookworm Minimal
+- Linux 内核：7.2.11
+- U-Boot：2026.01
+- 启动方式：extlinux
+- 首选启动介质：USB 3.0 Type-A
 
-## Getting started
+## 当前启动策略
 
-### Requirements for self hosted
+主线 U-Boot 默认优先扫描 USB 3.0 Type-A 接口，因此把系统写入 U 盘后可以直接测试，无需反复刷写 eMMC。
 
-- x86_64 / aarch64 machine
-- at least 2GB of memory and ~35GB of disk space for VM, container or bare metal installation
-- [Armbian / Ubuntu Jammy 22.04.x](https://github.com/armbian/sdk) for native building or any Docker capable Linux for containerised
-- Windows 10/11 with WSL2 subsystem running Ubuntu Jammy 22.04.x
-- Superuser rights (configured sudo or root access).
-- Make sure your system is up-to-date! Outdated Docker binaries, for example, can cause trouble.
+如果没有可启动的 U 盘，U-Boot 会继续扫描 eMMC，保留 eMMC 系统作为兜底启动路径。
 
-For stable branch use `--branch=v23.11`
+## 已完成的主要改动
 
-```bash
-apt-get -y install git
-git clone --branch=main https://github.com/wanghaoqd/armbian-build-sunniwell-Z96a
-cd armbian-build-sunniwell-Z96
+- 修复 eDP PHY 的 `pclk` 时钟，解决黑屏和无显示模式问题。
+- 增加 BOE NV140FHM-N43 面板支持。
+- 将 GPIO0_A0 建模为 Wi-Fi 模块的 `vcc_wifi` 电源控制。
+- 将 Wi-Fi SDIO 限制为 50 MHz，避免 SDR104 初始化超时。
+- 关闭 `rtw88` 深层省电，降低 RTL8822CS 断流概率。
+- 在 Wi-Fi 初始化完成后延迟加载蓝牙，避免 Wi-Fi 与蓝牙固件并发初始化冲突。
+- 补齐 Z96A 键盘功能键映射和早期显示所需 initramfs 模块。
+- 增加 RK3568 VDPU346 的 H.264/H.265 解码支持。
+- 固定 Linux 和 U-Boot 源码提交，并将构建缓存与输出目录排除在 Git 仓库之外。
 
-# Z96A 推荐的一键编译指令 (带 Cinnamon 桌面与硬件加速)：
-./compile.sh build \
-    BOARD=z96a-rk3568-laptop \
-    BRANCH=legacy \
-    BUILD_DESKTOP=yes \
-    BUILD_MINIMAL=no \
-    DESKTOP_ENVIRONMENT=cinnamon \
-    DESKTOP_ENVIRONMENT_CONFIG_NAME=config_base \
-    DESKTOP_APPGROUPS_SELECTED='browsers desktop_tools multimedia internet office' \
-    KERNEL_CONFIGURE=no \
-    RELEASE=jammy
+## 已知问题
+
+1. 主线 U-Boot 上电后，充电口指示灯暂时不显示。
+2. 主线 U-Boot 尚未集成原厂开机 Logo 和充电状态显示。
+3. 原厂 U-Boot 目前观察到 `reboot` 可能表现为关机，具体原因仍在反编译分析。
+4. 串口调试过程较麻烦，目前主线 U-Boot 虽不完美，但已能满足 USB 优先启动和日常测试。
+
+如果具备 Rea 与 Ghidra 反编译条件，可以继续分析原厂 U-Boot 的启动显示、Logo、充电指示灯和重启逻辑，并将相关实现合并到主线 U-Boot。欢迎提交 Pull Request 或 Issue。
+
+## 发布与测试说明
+
+GitHub Actions 仅在推送 tag 时构建当前 Z96A Minimal 镜像。工作流直接使用上游源码，不设置镜像加速变量；镜像加速仅用于本地构建环境。
+
+发布页中的镜像属于自动构建候选版本，尚未经过维护者对全部硬件的完整实机测试。刷写前请自行备份重要数据，并优先写入 U 盘测试。
+
+如果你完成了测试，请提交 Issue，并尽量包含以下信息：
+
+- 镜像 SHA256
+- 启动介质：USB 或 eMMC
+- 是否能够进入系统
+- eDP、Wi-Fi、蓝牙、键盘、触控板、USB、音频和电池状态
+- 对应问题的 `dmesg`、`lsblk`、`lspci`、`lsusb` 或截图
+
+维护者会根据 Issue 修复问题；经过多台设备或多次冷启动验证后，再将对应版本标记为稳定版。
+
+## 免责声明
+
+本项目提供的镜像、内核、U-Boot、设备树和补丁均按现状提供，不承诺适用于所有硬件批次。刷写设备存在覆盖数据、无法启动或需要恢复模式的风险，请自行承担测试风险。正式使用前请保留 eMMC 原始备份和可恢复工具。
