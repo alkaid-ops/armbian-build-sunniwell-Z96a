@@ -1,8 +1,24 @@
-diff --git a/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts b/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts
-index be2a1087d8b5..a55af4fed3af 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3568-sunniwell-z96a-typec.dts
-@@ -660,6 +660,8 @@ regulator-state-mem {
+@@ -114,6 +114,17 @@
+ 		stdout-path = "serial2:1500000n8";
+ 	};
+ 
++	wifi_power: regulator-wifi-power {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_wifi";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		startup-delay-us = <100000>;
++		vin-supply = <&vcc3v3_sd>;
++	};
++
+ 	/*
+ 	 * The Type-C charging port has a hardware-configured Quick Charge (QC)
+ 	 * protocol chip, not managed by software, that negotiates the adapter
+@@ -660,6 +671,8 @@
  
  			vcc3v3_sd: SWITCH_REG2 {
  				regulator-name = "vcc3v3_sd";
@@ -11,7 +27,7 @@ index be2a1087d8b5..a55af4fed3af 100644
  
  				regulator-state-mem {
  					regulator-off-in-suspend;
-@@ -887,15 +889,19 @@ &sdmmc1 {
+@@ -887,15 +900,19 @@
  	#address-cells = <1>;
  	#size-cells = <0>;
  	bus-width = <4>;
@@ -27,7 +43,7 @@ index be2a1087d8b5..a55af4fed3af 100644
  	pinctrl-names = "default";
  	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_clk &sdmmc1_cmd>;
 -	sd-uhs-sdr104;
-+	vmmc-supply = <&vcc3v3_sd>;
++	vmmc-supply = <&wifi_power>;
 +	vqmmc-supply = <&vccio_sd>;
  
  	status = "okay";
